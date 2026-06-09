@@ -1,0 +1,10 @@
+bucket                      = "cystotrack-terraform-state"
+endpoints                   = { s3 = "https://CLOUDFLARE_ACCOUNT_ID.r2.cloudflarestorage.com" }
+access_key                  = "R2_ACCESS_KEY_ID"
+secret_key                  = "R2_SECRET_ACCESS_KEY"
+use_lockfile                = true
+skip_credentials_validation = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+skip_s3_checksum            = true
+

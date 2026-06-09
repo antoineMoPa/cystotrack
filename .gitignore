@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+infrastructure/backend.hcl
+*.tfplan
+supabase/.temp/
+supabase/.branches/
+coverage/
+*.tsbuildinfo

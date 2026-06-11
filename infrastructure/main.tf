@@ -1,13 +1,5 @@
 terraform {
   required_version = ">= 1.5.0"
-  backend "s3" {
-    key                         = "cystotrack/terraform.tfstate"
-    region                      = "auto"
-    skip_credentials_validation = true
-    skip_region_validation      = true
-    skip_requesting_account_id  = true
-    skip_s3_checksum            = true
-  }
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"

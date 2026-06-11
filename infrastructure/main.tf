@@ -36,6 +36,15 @@ resource "supabase_project" "app" {
   instance_size     = "micro"
 }
 
+resource "supabase_settings" "app" {
+  project_ref = supabase_project.app.id
+
+  auth = jsonencode({
+    site_url       = var.app_url
+    uri_allow_list = "${var.app_url}/**"
+  })
+}
+
 resource "cloudflare_pages_project" "app" {
   account_id        = var.cloudflare_account_id
   name              = var.project_name
@@ -68,4 +77,3 @@ output "supabase_project_ref" {
 output "pages_url" {
   value = "https://${cloudflare_pages_project.app.subdomain}"
 }
-

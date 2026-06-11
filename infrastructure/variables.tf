@@ -2,6 +2,10 @@ variable "project_name" {
   type    = string
   default = "cystotrack"
 }
+variable "app_url" {
+  type    = string
+  default = "https://cystotrack.pages.dev"
+}
 variable "cloudflare_api_token" {
   type      = string
   sensitive = true
@@ -31,4 +35,3 @@ variable "supabase_anon_key" {
   type      = string
   sensitive = true
 }
-

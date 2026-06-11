@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(11);
 
 delete from auth.users
 where id in (
@@ -30,6 +30,9 @@ select lives_ok(
 select is((select count(*)::int from public.day_entries), 1, 'user sees own day');
 select is((select count(*)::int from public.foods), 1, 'food is created');
 select is((select count(*)::int from public.food_consumptions), 1, 'consumption is created');
+select ok(has_table_privilege('authenticated', 'public.day_entries', 'select'), 'authenticated can read days');
+select ok(has_table_privilege('authenticated', 'public.foods', 'select'), 'authenticated can read foods');
+select ok(has_table_privilege('authenticated', 'public.food_consumptions', 'select'), 'authenticated can read consumptions');
 select lives_ok(
   $$select public.save_day_entry('2026-06-09', 3::smallint, 5::smallint, 4::smallint, 6::smallint, 8::numeric, 2250, null, '[{"food_name":"pomme","meal_period":"lunch"}]'::jsonb)$$,
   'case-insensitive food is reused'

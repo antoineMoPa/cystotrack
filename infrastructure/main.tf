@@ -20,21 +20,36 @@ provider "supabase" {
   access_token = var.supabase_access_token
 }
 
+locals {
+  supabase_settings = jsondecode(file("${path.module}/supabase-settings.json"))
+}
+
 resource "supabase_project" "app" {
   organization_id   = var.supabase_organization_id
   name              = var.project_name
   database_password = var.supabase_database_password
   region            = var.supabase_region
   instance_size     = "micro"
+
+  lifecycle {
+    ignore_changes = [
+      database_password,
+      instance_size,
+    ]
+  }
 }
 
 resource "supabase_settings" "app" {
   project_ref = supabase_project.app.id
 
-  auth = jsonencode({
+  api = jsonencode(local.supabase_settings.api)
+  auth = jsonencode(merge(local.supabase_settings.auth, {
     site_url       = var.app_url
     uri_allow_list = "${var.app_url}/**"
-  })
+  }))
+  database = jsonencode(local.supabase_settings.database)
+  network  = jsonencode(local.supabase_settings.network)
+  storage  = jsonencode(local.supabase_settings.storage)
 }
 
 resource "cloudflare_pages_project" "app" {

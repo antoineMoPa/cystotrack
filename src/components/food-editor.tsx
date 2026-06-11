@@ -39,10 +39,27 @@ function MealEditor({ label, mealPeriod, value, onChange }: {
     <h3 className="font-semibold">{label}</h3>
     <div className="flex gap-2">
       <div className="min-w-0 flex-1">
-        <Input aria-label={`Aliment, ${label}`} list={suggestionsId} placeholder="Ex. Banane" value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addFood(); } }} />
+        <Input
+          aria-label={`Aliment, ${label}`}
+          list={suggestionsId}
+          placeholder="Ex. Banane"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onBlur={addFood}
+          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addFood(); } }}
+        />
         <datalist id={suggestionsId}>{foods.map((food) => <option key={food.id} value={food.name} />)}</datalist>
       </div>
-      <Button type="button" className="px-3" aria-label={`Ajouter au repas: ${label}`} onClick={addFood} disabled={!name.trim()}><Plus size={18} /></Button>
+      <Button
+        type="button"
+        className="px-3"
+        aria-label={`Ajouter au repas: ${label}`}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={addFood}
+        disabled={!name.trim()}
+      >
+        <Plus size={18} />
+      </Button>
     </div>
     {periodConsumptions.length === 0 ? <p className="text-sm text-muted-foreground">Aucun aliment.</p> :
       <ul className="space-y-2">{periodConsumptions.map((item) => <li key={item.id} className="flex items-center justify-between rounded-xl bg-white px-3 py-2">

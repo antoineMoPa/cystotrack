@@ -1,6 +1,6 @@
 # CystoTrack
 
-Food and symptom journal for interstitial cystitis. V1 records daily symptoms, stress, sleep, hydration, notes, and timed food consumption.
+Food and symptom journal for interstitial cystitis.
 
 ## Local development
 
@@ -10,36 +10,28 @@ Requirements: NVM, Node.js 24, Docker, and the Supabase CLI.
 nvm use
 npm install
 npx supabase start
-cp .env.example .env.local
 ```
 
-Copy the local API URL and anon key printed by `supabase status` into `.env.local`, then run:
+Create the local environment file:
+
+```bash
+cp .env.example .env.local
+npx supabase status
+```
+
+Copy the local API URL and publishable/anon key into `.env.local`, then start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Mailpit is available at `http://127.0.0.1:54324` for local OTP emails.
+Open the frontend at `http://localhost:5173`. Local authentication emails are available in Mailpit at `http://127.0.0.1:54324`.
 
-## Verification
+## Terraform
+
+Terraform changes are not applied automatically. Apply them manually:
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run db:test
-terraform -chdir=infrastructure fmt -check -recursive
-terraform -chdir=infrastructure init -backend=false
-terraform -chdir=infrastructure validate
+terraform -chdir=infrastructure plan
+terraform -chdir=infrastructure apply
 ```
-
-## Deployment
-
-1. Apply `infrastructure/bootstrap` once to create the R2 state bucket.
-2. Configure `infrastructure/backend.hcl` from the example and initialize the main Terraform stack.
-3. Apply `infrastructure` to create Supabase and Cloudflare Pages resources.
-4. Configure the GitHub environment `production` with the secrets referenced by `.github/workflows/deploy.yml`.
-5. Configure production SMTP and OTP email settings in Supabase.
-
-The production workflow pushes database migrations before deploying the built SPA to Cloudflare Pages.

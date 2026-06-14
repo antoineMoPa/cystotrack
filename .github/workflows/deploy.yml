@@ -41,12 +41,18 @@ jobs:
             --rawfile content supabase/templates/magic-link.html \
             '{mailer_subjects_magic_link: $subject, mailer_templates_magic_link_content: $content}' \
             > auth-email-template.json
-          curl --fail --silent --show-error \
+          response="$(curl --silent --show-error --write-out '\n%{http_code}' \
             --request PATCH \
             --url "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
             --header "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
             --header "Content-Type: application/json" \
-            --data @auth-email-template.json
+            --data @auth-email-template.json)"
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            printf 'Supabase Auth config update failed with HTTP %s\n%s\n' "$status" "$body" >&2
+            exit 1
+          fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}

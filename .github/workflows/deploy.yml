@@ -19,7 +19,7 @@ jobs:
           cache: npm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: v2.105.0
       - run: npm ci
       - run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
         env:

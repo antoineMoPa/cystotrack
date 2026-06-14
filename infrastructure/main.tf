@@ -44,8 +44,10 @@ resource "supabase_settings" "app" {
 
   api = jsonencode(local.supabase_settings.api)
   auth = jsonencode(merge(local.supabase_settings.auth, {
-    site_url       = var.app_url
-    uri_allow_list = "${var.app_url}/**"
+    site_url                            = var.app_url
+    uri_allow_list                      = "${var.app_url}/**"
+    mailer_subjects_magic_link          = "Connexion a CystoTrack"
+    mailer_templates_magic_link_content = file("${path.module}/../supabase/templates/magic-link.html")
   }))
   database = jsonencode(local.supabase_settings.database)
   network  = jsonencode(local.supabase_settings.network)

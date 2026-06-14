@@ -65,21 +65,6 @@ export const emptyDayEntry: DayEntryForm = {
   externalStress: null, sleepHours: null, hydrationMl: null, notes: "", plates: []
 };
 
-export function copyPreviousPlate(previousPlate: PreviousPlate, mealPeriod: MealPeriod): DayEntryForm["plates"][number] {
-  return {
-    id: crypto.randomUUID(),
-    name: previousPlate.name,
-    mealPeriod,
-    ingredients: previousPlate.ingredients.map((ingredient) => ({
-      id: crypto.randomUUID(),
-      foodId: ingredient.foodId,
-      foodName: ingredient.foodName,
-      quantity: ingredient.quantity,
-      measureUnit: ingredient.measureUnit
-    }))
-  };
-}
-
 export async function fetchDay(date: string, signal: AbortSignal): Promise<DayEntryForm> {
   const { data: day, error: dayError } = await supabase.from("day_entries")
     .select("*").eq("date", date).abortSignal(signal).maybeSingle();

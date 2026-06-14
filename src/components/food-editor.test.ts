@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { copyPreviousPlate } from "../lib/journal";
+import { copyPreviousPlate } from "../lib/plate-mapping";
 
 describe("copyPreviousPlate", () => {
   it("creates an independently editable plate for the selected meal", () => {

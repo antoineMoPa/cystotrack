@@ -39,7 +39,6 @@ jobs:
         with:
           version: v2.105.0
       - run: supabase start
-      - run: supabase db reset
       - run: supabase test db
 
   terraform:

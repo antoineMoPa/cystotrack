@@ -2,7 +2,8 @@ import { Plus, Search, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { DayEntryForm, MealPeriod, MeasureUnit, PreviousPlate } from "../lib/journal";
-import { copyPreviousPlate, fetchFoods, fetchPreviousPlates, measureUnits } from "../lib/journal";
+import { fetchFoods, fetchPreviousPlates, measureUnits } from "../lib/journal";
+import { copyPreviousPlate } from "../lib/plate-mapping";
 import { displayDate } from "../lib/date";
 import { Input, Select } from "./ui";
 

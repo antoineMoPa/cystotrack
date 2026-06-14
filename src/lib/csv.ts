@@ -6,18 +6,24 @@ function csvCell(value: unknown): string {
 }
 
 export function buildCsv(entries: HistoryEntry[]): string {
-  const headers = ["Date", "MorningPain", "EveningPain", "PerceivedStress", "ExternalStress", "SleepHours", "HydrationMl", "FoodMorning", "FoodLunch", "FoodEvening", "Notes"];
+  const headers = ["Date", "MorningPain", "EveningPain", "PerceivedStress", "ExternalStress", "SleepHours", "HydrationMl", "PlatesMorning", "PlatesLunch", "PlatesEvening", "Notes"];
   const rows = [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((entry) => {
-    const foodsForPeriod = (mealPeriod: MealPeriod) => entry.food_consumptions
-      .filter((item) => item.meal_period === mealPeriod)
-      .map((item) => item.foods?.name ?? "")
+    const platesForPeriod = (mealPeriod: MealPeriod) => entry.plates
+      .filter((plate) => plate.meal_period === mealPeriod)
+      .map((plate) => {
+        const ingredients = plate.plate_ingredients.map((item) => {
+          const quantity = item.quantity == null ? "" : `${item.quantity}${item.measure_unit ? ` ${item.measure_unit}` : ""} `;
+          return `${quantity}${item.foods?.name ?? ""}`.trim();
+        }).filter(Boolean).join(" + ");
+        return ingredients ? `${plate.name}: ${ingredients}` : plate.name;
+      })
       .filter(Boolean)
       .join("; ");
     return [
       entry.date, entry.bladder_pain_morning, entry.bladder_pain_evening,
       entry.perceived_stress, entry.external_stress, entry.sleep_hours,
-      entry.hydration_ml, foodsForPeriod("morning"), foodsForPeriod("lunch"),
-      foodsForPeriod("evening"), entry.notes
+      entry.hydration_ml, platesForPeriod("morning"), platesForPeriod("lunch"),
+      platesForPeriod("evening"), entry.notes
     ].map(csvCell).join(",");
   });
   return `\uFEFF${headers.map(csvCell).join(",")}\r\n${rows.join("\r\n")}\r\n`;

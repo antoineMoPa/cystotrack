@@ -68,6 +68,18 @@ export interface Database {
         Update: { meal_period?: Database["public"]["Enums"]["meal_period"] };
         Relationships: [];
       };
+      plates: {
+        Row: { id: string; day_entry_id: string; name: string; meal_period: Database["public"]["Enums"]["meal_period"]; position: number; created_at: string };
+        Insert: { id?: string; day_entry_id: string; name: string; meal_period: Database["public"]["Enums"]["meal_period"]; position: number; created_at?: string };
+        Update: { name?: string; meal_period?: Database["public"]["Enums"]["meal_period"]; position?: number };
+        Relationships: [];
+      };
+      plate_ingredients: {
+        Row: { id: string; plate_id: string; food_id: string; quantity: number | null; measure_unit: Database["public"]["Enums"]["measure_unit"] | null; position: number; created_at: string };
+        Insert: { id?: string; plate_id: string; food_id: string; quantity?: number | null; measure_unit?: Database["public"]["Enums"]["measure_unit"] | null; position: number; created_at?: string };
+        Update: { food_id?: string; quantity?: number | null; measure_unit?: Database["public"]["Enums"]["measure_unit"] | null; position?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -75,13 +87,14 @@ export interface Database {
         Args: {
           p_date: string; p_bladder_pain_morning: number | null; p_bladder_pain_evening: number | null;
           p_perceived_stress: number | null; p_external_stress: number | null; p_sleep_hours: number | null;
-          p_hydration_ml: number | null; p_notes: string | null; p_consumptions: Json;
+          p_hydration_ml: number | null; p_notes: string | null; p_plates: Json;
         };
         Returns: string;
       };
     };
     Enums: {
       meal_period: "morning" | "lunch" | "evening";
+      measure_unit: "ml" | "cup" | "teaspoon" | "tablespoon";
     };
     CompositeTypes: Record<string, never>;
   };

@@ -8,20 +8,20 @@ function entry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
     bladder_pain_morning: 2, bladder_pain_evening: 4, perceived_stress: 3,
     external_stress: 5, sleep_hours: 7.5, hydration_ml: 2200,
     notes: 'Une note, avec "guillemets"', created_at: "", updated_at: "",
-    food_consumptions: [
-      { id: "c-1", meal_period: "morning", foods: { id: "f-1", name: "Pomme" } },
-      { id: "c-2", meal_period: "lunch", foods: { id: "f-2", name: "Riz" } },
-      { id: "c-3", meal_period: "evening", foods: { id: "f-3", name: "Soupe" } }
+    plates: [
+      { id: "p-1", name: "Déjeuner", meal_period: "morning", plate_ingredients: [{ id: "i-1", quantity: 1, measure_unit: "cup", foods: { id: "f-1", name: "Pomme" } }] },
+      { id: "p-2", name: "Bol", meal_period: "lunch", plate_ingredients: [{ id: "i-2", quantity: null, measure_unit: null, foods: { id: "f-2", name: "Riz" } }] },
+      { id: "p-3", name: "Souper", meal_period: "evening", plate_ingredients: [{ id: "i-3", quantity: 250, measure_unit: "ml", foods: { id: "f-3", name: "Soupe" } }] }
     ],
     ...overrides
   };
 }
 
 describe("buildCsv", () => {
-  it("exports foods in separate meal-period columns and escapes cells", () => {
+  it("exports plates in separate meal-period columns and escapes cells", () => {
     const csv = buildCsv([entry()]);
-    expect(csv).toContain('"FoodMorning","FoodLunch","FoodEvening","Notes"');
-    expect(csv).toContain('"Pomme","Riz","Soupe","Une note, avec ""guillemets"""');
+    expect(csv).toContain('"PlatesMorning","PlatesLunch","PlatesEvening","Notes"');
+    expect(csv).toContain('"Déjeuner: 1 cup Pomme","Bol: Riz","Souper: 250 ml Soupe","Une note, avec ""guillemets"""');
     expect(csv).toContain('"Une note, avec ""guillemets"""');
   });
 

@@ -23,7 +23,7 @@ export function App() {
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => data.subscription.unsubscribe();
   }, []);
-  if (!ready) return <main className="p-6">Chargement…</main>;
+  if (!ready) return <main className="min-h-screen bg-background p-6 text-muted-foreground">Chargement…</main>;
   const router = createBrowserRouter([
     { path: "/login", element: <LoginPage session={session} /> },
     { path: "/", element: <Authenticated session={session} />, children: [

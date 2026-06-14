@@ -1,70 +1,138 @@
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { DayEntryForm } from "../lib/journal";
-import { fetchFoods } from "../lib/journal";
-import { Button, Input } from "./ui";
 import { useState } from "react";
+import type { DayEntryForm, MealPeriod, MeasureUnit } from "../lib/journal";
+import { fetchFoods, measureUnits } from "../lib/journal";
+import { Input, Select } from "./ui";
 
-type Consumption = DayEntryForm["consumptions"][number];
-type MealPeriod = Consumption["mealPeriod"];
+type Plate = DayEntryForm["plates"][number];
+type Ingredient = Plate["ingredients"][number];
+export type PlateError = {
+  name?: { message?: string };
+  ingredients?: Array<{
+    foodName?: { message?: string };
+    quantity?: { message?: string };
+  }>;
+};
+type IngredientError = NonNullable<PlateError["ingredients"]>[number];
 
-export function FoodEditor({ value, onChange }: { value: Consumption[]; onChange: (value: Consumption[]) => void }) {
+const mealLabels: Record<MealPeriod, string> = {
+  morning: "Matin / petit-déjeuner",
+  lunch: "Midi / déjeuner",
+  evening: "Soir / dîner"
+};
+
+const unitLabels: Record<MeasureUnit, string> = {
+  ml: "ml",
+  cup: "tasse",
+  teaspoon: "cuillère à thé",
+  tablespoon: "cuillère à soupe"
+};
+
+export function FoodEditor({ value, onChange, errors }: { value: Plate[]; onChange: (value: Plate[]) => void; errors?: PlateError[] }) {
   return <div className="grid gap-5 lg:grid-cols-3">
-    <MealEditor label="Matin / petit-déjeuner" mealPeriod="morning" value={value} onChange={onChange} />
-    <MealEditor label="Midi / déjeuner" mealPeriod="lunch" value={value} onChange={onChange} />
-    <MealEditor label="Soir / dîner" mealPeriod="evening" value={value} onChange={onChange} />
+    {Object.entries(mealLabels).map(([mealPeriod, label]) => <MealEditor key={mealPeriod} label={label} mealPeriod={mealPeriod as MealPeriod} value={value} onChange={onChange} errors={errors} />)}
   </div>;
 }
 
-function MealEditor({ label, mealPeriod, value, onChange }: {
+function MealEditor({ label, mealPeriod, value, onChange, errors }: {
   label: string;
   mealPeriod: MealPeriod;
-  value: Consumption[];
-  onChange: (value: Consumption[]) => void;
+  value: Plate[];
+  onChange: (value: Plate[]) => void;
+  errors?: PlateError[];
 }) {
-  const [name, setName] = useState("");
-  const { data: foods = [] } = useQuery({ queryKey: ["foods", name], queryFn: () => fetchFoods(name) });
-  const periodConsumptions = value.filter((item) => item.mealPeriod === mealPeriod);
+  const periodPlates = value.map((plate, index) => ({ plate, index })).filter((item) => item.plate.mealPeriod === mealPeriod);
 
-  function addFood() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const existing = foods.find((food) => food.name.localeCompare(trimmed, undefined, { sensitivity: "base" }) === 0);
-    onChange([...value, { id: crypto.randomUUID(), foodId: existing?.id ?? null, foodName: existing?.name ?? trimmed, mealPeriod }]);
-    setName("");
+  function updatePlate(updatedPlate: Plate) {
+    onChange(value.map((plate) => plate.id === updatedPlate.id ? updatedPlate : plate));
   }
 
-  const suggestionsId = `food-suggestions-${mealPeriod}`;
-  return <section className="space-y-3 rounded-xl bg-muted/60 p-3">
-    <h3 className="font-semibold">{label}</h3>
+  return <section className="rounded-xl border border-border bg-muted/40">
+    <h3 className="border-b border-border px-4 py-3 text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">{label}</h3>
+    <div className="divide-y divide-border">
+      {periodPlates.map(({ plate, index }) => <PlateEditor
+        key={plate.id}
+        plate={plate}
+        error={errors?.[index]}
+        onChange={updatePlate}
+        onRemove={() => onChange(value.filter((entry) => entry.id !== plate.id))}
+      />)}
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-primary transition hover:bg-card"
+        onClick={() => onChange([...value, { id: crypto.randomUUID(), name: "", mealPeriod, ingredients: [] }])}
+      >
+        <Plus size={16} /> Ajouter un plat
+      </button>
+    </div>
+    {periodPlates.length === 0 && <p className="px-4 pb-3 text-[13px] text-muted-foreground">Aucun plat pour ce moment.</p>}
+  </section>;
+}
+
+function PlateEditor({ plate, error, onChange, onRemove }: { plate: Plate; error?: PlateError; onChange: (plate: Plate) => void; onRemove: () => void }) {
+  function updateIngredient(updatedIngredient: Ingredient) {
+    onChange({ ...plate, ingredients: plate.ingredients.map((item) => item.id === updatedIngredient.id ? updatedIngredient : item) });
+  }
+
+  return <div className="space-y-3 bg-card p-4">
     <div className="flex gap-2">
       <div className="min-w-0 flex-1">
-        <Input
-          aria-label={`Aliment, ${label}`}
-          list={suggestionsId}
-          placeholder="Ex. Banane"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          onBlur={addFood}
-          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addFood(); } }}
-        />
-        <datalist id={suggestionsId}>{foods.map((food) => <option key={food.id} value={food.name} />)}</datalist>
+        <Input aria-label="Nom du plat" placeholder="Nom du plat" value={plate.name} aria-invalid={Boolean(error?.name)} onChange={(event) => onChange({ ...plate, name: event.target.value })} />
+        {error?.name?.message && <p role="alert" className="mt-1 text-[13px] text-destructive">{error.name.message}</p>}
       </div>
-      <Button
-        type="button"
-        className="px-3"
-        aria-label={`Ajouter au repas: ${label}`}
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={addFood}
-        disabled={!name.trim()}
-      >
-        <Plus size={18} />
-      </Button>
+      <button type="button" aria-label={`Retirer ${plate.name}`} className="rounded-md p-2 text-muted-foreground transition hover:bg-muted hover:text-destructive" onClick={onRemove}><Trash2 size={18} /></button>
     </div>
-    {periodConsumptions.length === 0 ? <p className="text-sm text-muted-foreground">Aucun aliment.</p> :
-      <ul className="space-y-2">{periodConsumptions.map((item) => <li key={item.id} className="flex items-center justify-between rounded-xl bg-white px-3 py-2">
-        <strong>{item.foodName}</strong>
-        <button type="button" aria-label={`Retirer ${item.foodName}`} className="rounded-lg p-1 hover:bg-white" onClick={() => onChange(value.filter((entry) => entry.id !== item.id))}><X size={18} /></button>
-      </li>)}</ul>}
-  </section>;
+    <div className="space-y-2">
+      {plate.ingredients.map((ingredient, index) => <IngredientEditor
+        key={ingredient.id}
+        ingredient={ingredient}
+        error={error?.ingredients?.[index]}
+        onChange={updateIngredient}
+        onRemove={() => onChange({ ...plate, ingredients: plate.ingredients.filter((item) => item.id !== ingredient.id) })}
+      />)}
+    </div>
+    <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-primary transition hover:-translate-y-px hover:bg-muted" onClick={() => onChange({
+      ...plate,
+      ingredients: [...plate.ingredients, { id: crypto.randomUUID(), foodId: null, foodName: "", quantity: null, measureUnit: null }]
+    })}>
+      <Plus size={16} /> Ajouter un ingrédient
+    </button>
+  </div>;
+}
+
+function IngredientEditor({ ingredient, error, onChange, onRemove }: { ingredient: Ingredient; error?: IngredientError; onChange: (ingredient: Ingredient) => void; onRemove: () => void }) {
+  const [search, setSearch] = useState(ingredient.foodName);
+  const { data: foods = [] } = useQuery({ queryKey: ["foods", search], queryFn: () => fetchFoods(search) });
+  const suggestionsId = `food-suggestions-${ingredient.id}`;
+
+  function changeFoodName(foodName: string) {
+    const existing = foods.find((food) => food.name.localeCompare(foodName.trim(), undefined, { sensitivity: "base" }) === 0);
+    setSearch(foodName);
+    onChange({ ...ingredient, foodId: existing?.id ?? null, foodName: existing?.name ?? foodName });
+  }
+
+  return <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[minmax(0,1fr)_6rem_minmax(0,9rem)_auto]">
+    <div>
+      <Input aria-label="Nom de l’ingrédient" list={suggestionsId} placeholder="Ex. Banane" value={ingredient.foodName} aria-invalid={Boolean(error?.foodName)} onChange={(event) => changeFoodName(event.target.value)} />
+      <datalist id={suggestionsId}>{foods.map((food) => <option key={food.id} value={food.name} />)}</datalist>
+      {error?.foodName?.message && <p role="alert" className="mt-1 text-[13px] text-destructive">{error.foodName.message}</p>}
+    </div>
+    <div>
+      <Input
+        aria-label="Quantité"
+        inputMode="decimal"
+        placeholder="Qté"
+        value={ingredient.quantity ?? ""}
+        aria-invalid={Boolean(error?.quantity)}
+        onChange={(event) => onChange({ ...ingredient, quantity: event.target.value === "" ? null : Number(event.target.value) })}
+      />
+      {error?.quantity?.message && <p role="alert" className="mt-1 text-[13px] text-destructive">{error.quantity.message}</p>}
+    </div>
+    <Select aria-label="Unité" value={ingredient.measureUnit ?? ""} onChange={(event) => onChange({ ...ingredient, measureUnit: event.target.value === "" ? null : event.target.value as MeasureUnit })}>
+      <option value="">Unité</option>
+      {measureUnits.map((unit) => <option key={unit} value={unit}>{unitLabels[unit]}</option>)}
+    </Select>
+    <button type="button" aria-label={`Retirer ${ingredient.foodName || "cet ingrédient"}`} className="rounded-md p-2 text-muted-foreground transition hover:bg-muted hover:text-destructive" onClick={onRemove}><Trash2 size={18} /></button>
+  </div>;
 }

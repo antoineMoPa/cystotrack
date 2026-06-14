@@ -46,10 +46,39 @@ export interface HistoryEntry extends DayRow {
   }>;
 }
 
+export interface PreviousPlate {
+  id: string;
+  date: string;
+  name: string;
+  mealPeriod: MealPeriod;
+  ingredients: Array<{
+    id: string;
+    foodId: string;
+    foodName: string;
+    quantity: number | null;
+    measureUnit: MeasureUnit | null;
+  }>;
+}
+
 export const emptyDayEntry: DayEntryForm = {
   bladderPainMorning: null, bladderPainEvening: null, perceivedStress: null,
   externalStress: null, sleepHours: null, hydrationMl: null, notes: "", plates: []
 };
+
+export function copyPreviousPlate(previousPlate: PreviousPlate, mealPeriod: MealPeriod): DayEntryForm["plates"][number] {
+  return {
+    id: crypto.randomUUID(),
+    name: previousPlate.name,
+    mealPeriod,
+    ingredients: previousPlate.ingredients.map((ingredient) => ({
+      id: crypto.randomUUID(),
+      foodId: ingredient.foodId,
+      foodName: ingredient.foodName,
+      quantity: ingredient.quantity,
+      measureUnit: ingredient.measureUnit
+    }))
+  };
+}
 
 export async function fetchDay(date: string, signal: AbortSignal): Promise<DayEntryForm> {
   const { data: day, error: dayError } = await supabase.from("day_entries")
@@ -133,6 +162,57 @@ export async function fetchFoods(search = "") {
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+export async function fetchPreviousPlates(date: string, search: string): Promise<PreviousPlate[]> {
+  const searchedName = search.trim();
+  if (!searchedName) return [];
+
+  const { data: days, error: dayError } = await supabase.from("day_entries")
+    .select("id, date")
+    .lte("date", date)
+    .order("date", { ascending: false })
+    .limit(100);
+  if (dayError) throw dayError;
+  if (!days.length) return [];
+
+  const { data: plates, error: plateError } = await supabase.from("plates")
+    .select("id, day_entry_id, name, meal_period, position")
+    .in("day_entry_id", days.map((day) => day.id))
+    .ilike("name", `%${searchedName}%`)
+    .limit(20);
+  if (plateError) throw plateError;
+  if (!plates.length) return [];
+
+  const { data: ingredients, error: ingredientError } = await supabase.from("plate_ingredients")
+    .select("id, plate_id, food_id, quantity, measure_unit, position")
+    .in("plate_id", plates.map((plate) => plate.id));
+  if (ingredientError) throw ingredientError;
+
+  const foodIds = [...new Set(ingredients.map((item) => item.food_id))];
+  const { data: foods, error: foodError } = foodIds.length
+    ? await supabase.from("foods").select("id, name").in("id", foodIds)
+    : { data: [], error: null };
+  if (foodError) throw foodError;
+
+  return plates
+    .map((plate) => ({
+      id: plate.id,
+      date: days.find((day) => day.id === plate.day_entry_id)!.date,
+      name: plate.name,
+      mealPeriod: plate.meal_period,
+      ingredients: ingredients
+        .filter((item) => item.plate_id === plate.id)
+        .sort((a, b) => a.position - b.position)
+        .map((item) => ({
+          id: item.id,
+          foodId: item.food_id,
+          foodName: foods.find((food) => food.id === item.food_id)?.name ?? "",
+          quantity: item.quantity,
+          measureUnit: item.measure_unit
+        }))
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export async function fetchHistory(): Promise<HistoryEntry[]> {

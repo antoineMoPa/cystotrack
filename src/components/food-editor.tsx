@@ -1,8 +1,9 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { DayEntryForm, MealPeriod, MeasureUnit } from "../lib/journal";
-import { fetchFoods, measureUnits } from "../lib/journal";
+import type { DayEntryForm, MealPeriod, MeasureUnit, PreviousPlate } from "../lib/journal";
+import { copyPreviousPlate, fetchFoods, fetchPreviousPlates, measureUnits } from "../lib/journal";
+import { displayDate } from "../lib/date";
 import { Input, Select } from "./ui";
 
 type Plate = DayEntryForm["plates"][number];
@@ -29,13 +30,14 @@ const unitLabels: Record<MeasureUnit, string> = {
   tablespoon: "cuillère à soupe"
 };
 
-export function FoodEditor({ value, onChange, errors }: { value: Plate[]; onChange: (value: Plate[]) => void; errors?: PlateError[] }) {
+export function FoodEditor({ date, value, onChange, errors }: { date: string; value: Plate[]; onChange: (value: Plate[]) => void; errors?: PlateError[] }) {
   return <div className="grid gap-5 lg:grid-cols-3">
-    {Object.entries(mealLabels).map(([mealPeriod, label]) => <MealEditor key={mealPeriod} label={label} mealPeriod={mealPeriod as MealPeriod} value={value} onChange={onChange} errors={errors} />)}
+    {Object.entries(mealLabels).map(([mealPeriod, label]) => <MealEditor key={mealPeriod} date={date} label={label} mealPeriod={mealPeriod as MealPeriod} value={value} onChange={onChange} errors={errors} />)}
   </div>;
 }
 
-function MealEditor({ label, mealPeriod, value, onChange, errors }: {
+function MealEditor({ date, label, mealPeriod, value, onChange, errors }: {
+  date: string;
   label: string;
   mealPeriod: MealPeriod;
   value: Plate[];
@@ -50,6 +52,7 @@ function MealEditor({ label, mealPeriod, value, onChange, errors }: {
 
   return <section className="rounded-xl border border-border bg-muted/40">
     <h3 className="border-b border-border px-4 py-3 text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">{label}</h3>
+    <PreviousPlateSearch date={date} mealPeriod={mealPeriod} onSelect={(previousPlate) => onChange([...value, copyPreviousPlate(previousPlate, mealPeriod)])} />
     <div className="divide-y divide-border">
       {periodPlates.map(({ plate, index }) => <PlateEditor
         key={plate.id}
@@ -68,6 +71,46 @@ function MealEditor({ label, mealPeriod, value, onChange, errors }: {
     </div>
     {periodPlates.length === 0 && <p className="px-4 pb-3 text-[13px] text-muted-foreground">Aucun plat pour ce moment.</p>}
   </section>;
+}
+
+function PreviousPlateSearch({ date, mealPeriod, onSelect }: { date: string; mealPeriod: MealPeriod; onSelect: (plate: PreviousPlate) => void }) {
+  const [search, setSearch] = useState("");
+  const searchedName = search.trim();
+  const { data: plates = [], isFetching, isError } = useQuery({
+    queryKey: ["previous-plates", date, searchedName],
+    queryFn: () => fetchPreviousPlates(date, searchedName),
+    enabled: searchedName.length > 0
+  });
+
+  return <div className="border-b border-border bg-card/60 p-3">
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+      <Input
+        className="pl-9"
+        aria-label={`Rechercher parmi tous les plats enregistrés pour ${mealLabels[mealPeriod]}`}
+        placeholder="Reprendre un plat enregistré…"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+    </div>
+    {searchedName && <div className="mt-2 overflow-hidden rounded-md border border-border bg-card">
+      {isFetching && <p className="px-3 py-2 text-[13px] text-muted-foreground">Recherche…</p>}
+      {isError && <p role="alert" className="px-3 py-2 text-[13px] text-destructive">Recherche impossible.</p>}
+      {!isFetching && !isError && plates.length === 0 && <p className="px-3 py-2 text-[13px] text-muted-foreground">Aucun plat enregistré trouvé.</p>}
+      {!isFetching && plates.map((plate) => <button
+        key={plate.id}
+        type="button"
+        className="block w-full border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-muted"
+        onClick={() => {
+          onSelect(plate);
+          setSearch("");
+        }}
+      >
+        <span className="block text-sm font-medium">{plate.name}</span>
+        <span className="block text-[12px] text-muted-foreground">{displayDate(plate.date)} · {plate.ingredients.map((ingredient) => ingredient.foodName).join(", ") || "Sans ingrédient"}</span>
+      </button>)}
+    </div>}
+  </div>;
 }
 
 function PlateEditor({ plate, error, onChange, onRemove }: { plate: Plate; error?: PlateError; onChange: (plate: Plate) => void; onRemove: () => void }) {

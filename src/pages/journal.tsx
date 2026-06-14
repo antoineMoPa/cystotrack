@@ -113,7 +113,7 @@ export function JournalPage() {
       </div>
     </Card>
     <Card><h2 className="mb-5 font-display text-2xl font-bold sm:text-[32px]">Aliments consommés</h2>
-      <Controller control={form.control} name="plates" render={({ field }) => <FoodEditor value={field.value} onChange={field.onChange} errors={errors.plates as PlateError[] | undefined} />} />
+      <Controller control={form.control} name="plates" render={({ field }) => <FoodEditor date={date!} value={field.value} onChange={field.onChange} errors={errors.plates as PlateError[] | undefined} />} />
     </Card>
     <Card><Controller control={form.control} name="notes" render={({ field }) => <Field label="Notes (facultatif)"><Textarea rows={4} placeholder="Contexte, symptômes particuliers…" {...field} /></Field>} /></Card>
     {Object.keys(errors).length > 0 && <p role="alert" className="rounded-lg border border-destructive/30 bg-card px-4 py-3 text-sm text-destructive">Certains champs doivent être corrigés avant l’enregistrement.</p>}

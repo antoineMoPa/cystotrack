@@ -1,5 +1,14 @@
 import type { DayEntryForm, MealPeriod, PreviousPlate } from "./journal";
 
+export function createPlate(name: string, mealPeriod: MealPeriod): DayEntryForm["plates"][number] {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    mealPeriod,
+    ingredients: []
+  };
+}
+
 export function copyPreviousPlate(previousPlate: PreviousPlate, mealPeriod: MealPeriod): DayEntryForm["plates"][number] {
   return {
     id: crypto.randomUUID(),

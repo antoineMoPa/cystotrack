@@ -1,5 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { copyPreviousPlate } from "../lib/plate-mapping";
+import { copyPreviousPlate, createPlate } from "../lib/plate-mapping";
+
+describe("createPlate", () => {
+  it("uses the searched name in the selected meal", () => {
+    vi.stubGlobal("crypto", { randomUUID: vi.fn().mockReturnValue("new-plate") });
+
+    expect(createPlate("Soupe maison", "evening")).toEqual({
+      id: "new-plate",
+      name: "Soupe maison",
+      mealPeriod: "evening",
+      ingredients: []
+    });
+  });
+});
 
 describe("copyPreviousPlate", () => {
   it("creates an independently editable plate for the selected meal", () => {

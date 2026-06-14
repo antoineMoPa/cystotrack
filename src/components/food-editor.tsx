@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { DayEntryForm, MealPeriod, MeasureUnit, PreviousPlate } from "../lib/journal";
 import { fetchFoods, fetchPreviousPlates, measureUnits } from "../lib/journal";
-import { copyPreviousPlate } from "../lib/plate-mapping";
+import { copyPreviousPlate, createPlate } from "../lib/plate-mapping";
 import { displayDate } from "../lib/date";
 import { Input, Select } from "./ui";
 
@@ -53,7 +53,12 @@ function MealEditor({ date, label, mealPeriod, value, onChange, errors }: {
 
   return <section className="rounded-xl border border-border bg-muted/40">
     <h3 className="border-b border-border px-4 py-3 text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">{label}</h3>
-    <PreviousPlateSearch date={date} mealPeriod={mealPeriod} onSelect={(previousPlate) => onChange([...value, copyPreviousPlate(previousPlate, mealPeriod)])} />
+    <PreviousPlateSearch
+      date={date}
+      mealPeriod={mealPeriod}
+      onCreate={(name) => onChange([...value, createPlate(name, mealPeriod)])}
+      onSelect={(previousPlate) => onChange([...value, copyPreviousPlate(previousPlate, mealPeriod)])}
+    />
     <div className="divide-y divide-border">
       {periodPlates.map(({ plate, index }) => <PlateEditor
         key={plate.id}
@@ -74,7 +79,12 @@ function MealEditor({ date, label, mealPeriod, value, onChange, errors }: {
   </section>;
 }
 
-function PreviousPlateSearch({ date, mealPeriod, onSelect }: { date: string; mealPeriod: MealPeriod; onSelect: (plate: PreviousPlate) => void }) {
+function PreviousPlateSearch({ date, mealPeriod, onCreate, onSelect }: {
+  date: string;
+  mealPeriod: MealPeriod;
+  onCreate: (name: string) => void;
+  onSelect: (plate: PreviousPlate) => void;
+}) {
   const [search, setSearch] = useState("");
   const searchedName = search.trim();
   const { data: plates = [], isFetching, isError } = useQuery({
@@ -97,7 +107,16 @@ function PreviousPlateSearch({ date, mealPeriod, onSelect }: { date: string; mea
     {searchedName && <div className="mt-2 overflow-hidden rounded-md border border-border bg-card">
       {isFetching && <p className="px-3 py-2 text-[13px] text-muted-foreground">Recherche…</p>}
       {isError && <p role="alert" className="px-3 py-2 text-[13px] text-destructive">Recherche impossible.</p>}
-      {!isFetching && !isError && plates.length === 0 && <p className="px-3 py-2 text-[13px] text-muted-foreground">Aucun plat enregistré trouvé.</p>}
+      {!isFetching && !isError && plates.length === 0 && <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary hover:bg-muted"
+        onClick={() => {
+          onCreate(searchedName);
+          setSearch("");
+        }}
+      >
+        <Plus size={16} /> Créer « {searchedName} »
+      </button>}
       {!isFetching && plates.map((plate) => <button
         key={plate.id}
         type="button"
